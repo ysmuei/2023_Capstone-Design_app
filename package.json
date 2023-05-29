@@ -13,12 +13,14 @@
     "axios": "^1.4.0",
     "expo": "~48.0.15",
     "expo-av": "^13.2.1",
+    "expo-linear-gradient": "^12.1.2",
     "expo-permissions": "~14.1.1",
     "expo-status-bar": "~1.4.4",
     "react": "18.2.0",
     "react-native": "0.71.8",
     "react-native-audio": "^4.3.0",
-    "react-native-fs": "^2.20.0"
+    "react-native-fs": "^2.20.0",
+    "react-native-vector-icons": "^9.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

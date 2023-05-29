@@ -7,7 +7,6 @@ import * as Permissions from 'expo-permissions';
 import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import {Image} from 'react-native';
-import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient'
 
 
@@ -67,11 +66,8 @@ export default function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingsList, setRecordingsList] = useState([]);
   const [recordingTime, setRecordingTime] = useState(0);
-  //const [responseData, setResponseData] = useState('');
   const [responseData, setResponseData] = useState(null);
   
-
-
   useEffect(() => {
     Audio.setAudioModeAsync({
       allowsRecordingIOS: true,
@@ -85,8 +81,8 @@ export default function App() {
     let timer;
     if (isRecording) {
       timer = setInterval(() => {
-        setRecordingTime(prevTime => prevTime + 1);
-      }, 1);
+        setRecordingTime(prevTime => prevTime + 10);
+      }, 10);
     } else {
       setRecordingTime(0);
     }
@@ -101,6 +97,7 @@ export default function App() {
       const { exists } = await FileSystem.getInfoAsync(directory);
       if (exists) {
         const files = await FileSystem.readDirectoryAsync(directory);
+        files.sort();
         setRecordingsList(files);
       }
     } catch (error) {
@@ -146,7 +143,7 @@ export default function App() {
       const minutes = String(date.getMinutes()).padStart(2, '0');
       const seconds = String(date.getSeconds()).padStart(2, '0');
 
-      const fileName = `(${month}.${days})${hours}${minutes}${seconds}.caf`;
+      const fileName = `(${month}.${days})${hours}h${minutes}m${seconds}s.caf`;
       const directory = `${FileSystem.documentDirectory}recordings/`;
       await FileSystem.makeDirectoryAsync(directory, { intermediates: true });
       await FileSystem.moveAsync({
@@ -205,7 +202,7 @@ export default function App() {
             <Icon style={{marginLeft: 20}} name="play" size={25} color="white" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => deleteRecording(item)}>
-            <Icon style={{marginLeft: 0}} name="trash" size={25} color="white"/>
+            <Icon name="trash" size={25} color="white"/>
           </TouchableOpacity>
         </View>
       </View>
@@ -216,7 +213,10 @@ export default function App() {
     <SafeAreaView style={{ flex: 1 }}>
       <View style={styles.view1}>
         <View style={styles.TopView}>
-          {isRecording && <Text style={styles.recordingTime}>{recordingTime}</Text>}
+          {isRecording && <Text style={styles.recordingTime}>
+            {new Date(recordingTime).toISOString().substr(14, 8)}
+            {/* {recordingTime / 1000} */}
+            </Text>}
           <View style={{ flex: 1 }}>
             <Image
               source={require("./assets/images/image1.png")}
@@ -233,19 +233,14 @@ export default function App() {
           </View>
           <View>
             <Text style={{ color: "white", marginBottom: 20 }}>
-              Recording Start
+              {isRecording ? 'Recording Stop ': 'Recording Start'}
             </Text>
           </View>
           <View style={styles.accuracy}>
             <Text style={{ color: "#DF84DD", fontSize: 30, fontWeight: 200, }}>
-              Accuracy ??%
+              Accuracy  ??%
             </Text>
           </View>
-          {/* 
-        <TouchableOpacity style={styles.textStart} onPress={isRecording ? stopRecording : startRecording}>
-          <Text style={{ color: 'white', fontSize: 20, fontWeight: 600 }}>{isRecording ? '정지' : '시작'}</Text>
-          {isRecording && <Text style={styles.recordingTime}>{recordingTime}s</Text>}
-        </TouchableOpacity> */}
         </View>
         <LinearGradient colors={['rgba(14, 0, 57, 0)', '#0E0039', '#0E0019']} style={styles.linear}>
           <FlatList
@@ -306,8 +301,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#100042",
   },
   recordingTime: {
+    width: 200,
     color: "white",
     position: "absolute",
+    left: 120,
     top: 30,
     fontSize: 40,
     fontWeight: 200,
