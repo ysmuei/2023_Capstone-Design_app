@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, TouchableOpacity, FlatList } from 'react-native';
+import { Text, View, TouchableOpacity, FlatList, SafeAreaView  } from 'react-native';
 import { StyleSheet } from "react-native";
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import * as Permissions from 'expo-permissions';
+import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
+import {Image} from 'react-native';
+import { Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient'
+
 
 const uploadRecording = async (file) => {
   try {
@@ -42,7 +47,7 @@ const handleCheckButton = async (fileName) => {
     const fileUri = `${directory}${fileName}`;
     const file = {
       uri: fileUri,
-      type: 'audio/x-caf', //x-caf// MP3 파일 형식에 맞게 설정
+      type: 'audio/x-caf', //x-caf// .caf파일 형식에 맞게 설정
       name: fileName,
     };
 
@@ -64,6 +69,8 @@ export default function App() {
   const [recordingTime, setRecordingTime] = useState(0);
   //const [responseData, setResponseData] = useState('');
   const [responseData, setResponseData] = useState(null);
+  
+
 
   useEffect(() => {
     Audio.setAudioModeAsync({
@@ -79,7 +86,7 @@ export default function App() {
     if (isRecording) {
       timer = setInterval(() => {
         setRecordingTime(prevTime => prevTime + 1);
-      }, 1000);
+      }, 1);
     } else {
       setRecordingTime(0);
     }
@@ -132,9 +139,7 @@ export default function App() {
 
   const saveRecording = async (uri) => {
     try {
-      //const fileName = uri.split('/').pop();
       const date = new Date();
-      const year = String(date.getFullYear());
       const month = String(date.getMonth()+1);
       const days = String(date.getDate()).padStart(2, '0');
       const hours = String(date.getHours()).padStart(2, '0');
@@ -187,125 +192,168 @@ export default function App() {
     return shortenedName;
   };
 
-  const renderRecordingItem = ({ item }) => {
+  const renderRecordingItem = ({ item, index }) => {
     const shortenedName = shortenFileName(item);
-
+    const count = index + 1;
     return (
       <View style={styles.view_Flist}>
-        <View style={{flexDirection:'row'}}>
-          <Text style={{ marginHorizontal: 10, flex: 0.9, fontSize: 18, color: 'white' }}>{shortenedName}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: 'space-between', flex: 1 }}>
+          <Text style={styles.list_count}>{count}</Text>
+          <Text style={styles.list_name}>{shortenedName}</Text>
+          <Text style={styles.list_time}>00:03</Text>
           <TouchableOpacity onPress={() => playRecording(item)}>
-            <Text style={styles.PlayText}>Play</Text>
+            <Icon style={{marginLeft: 20}} name="play" size={25} color="white" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => deleteRecording(item)}>
-            <Text style={{ color: '#F53730', fontSize: 18 }}>Delete</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.checkBT} onPress={() => handleCheckButton(item, responseData)}>
-            <Text style={{ fontSize: 18 }}>검사</Text>
+            <Icon style={{marginLeft: 0}} name="trash" size={25} color="white"/>
           </TouchableOpacity>
         </View>
-        <View>
-          {responseData && (
-            <Text style={styles.responseText}>{responseData}</Text>
-          )}
-          {/* <Text>정확도 : {responseData}</Text> */}
-        </View>
-
       </View>
     );
   };
 
   return (
-    <View style={styles.view1}>
-      <View style={styles.TopView}>
-        <View style={[styles.view_text_rc, { backgroundColor: isRecording ? '#26EB1D' : '#F53730' }]}>
-          <Text style={styles.text_rc}>{isRecording ? 'Recording...' : 'Not Recording'}</Text>
-        </View>
+    <SafeAreaView style={{ flex: 1 }}>
+      <View style={styles.view1}>
+        <View style={styles.TopView}>
+          {isRecording && <Text style={styles.recordingTime}>{recordingTime}</Text>}
+          <View style={{ flex: 1 }}>
+            <Image
+              source={require("./assets/images/image1.png")}
+              style={{ marginTop: -30 }}
+            />
+            <TouchableOpacity style={styles.micBtn} onPress={isRecording ? stopRecording : startRecording}>
+              <Icon
+                style={{ marginTop: 40, marginLeft: 7 }}
+                name={isRecording ? "stop" : "mic"}
+                size={70}
+                color="white"
+              />
+            </TouchableOpacity>
+          </View>
+          <View>
+            <Text style={{ color: "white", marginBottom: 20 }}>
+              Recording Start
+            </Text>
+          </View>
+          <View style={styles.accuracy}>
+            <Text style={{ color: "#DF84DD", fontSize: 30, fontWeight: 200, }}>
+              Accuracy ??%
+            </Text>
+          </View>
+          {/* 
         <TouchableOpacity style={styles.textStart} onPress={isRecording ? stopRecording : startRecording}>
           <Text style={{ color: 'white', fontSize: 20, fontWeight: 600 }}>{isRecording ? '정지' : '시작'}</Text>
           {isRecording && <Text style={styles.recordingTime}>{recordingTime}s</Text>}
-        </TouchableOpacity>
+        </TouchableOpacity> */}
+        </View>
+        <LinearGradient colors={['rgba(14, 0, 57, 0)', '#0E0039', '#0E0019']} style={styles.linear}>
+          <FlatList
+            style={styles.FList}
+            data={recordingsList}
+            renderItem={renderRecordingItem}
+            keyExtractor={(item) => item}
+          />
+        </LinearGradient>
       </View>
-      
-      <FlatList
-        style = {styles.FList}
-        data={recordingsList}
-        renderItem={renderRecordingItem}
-        keyExtractor={(item) => item}
-      />
-    </View>
+    </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
   view1: {
-    backgroundColor: "rgba(50,50,50,1)",
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center'
-  },
-  TopView:{
-    width: 300,
-    marginTop: 70,
-    flexDirection: "row",
-    justifyContent: 'space-around',
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
   },
-  PlayText:{
-    flexDirection: 'row',
-    width: 50,
-    height: 30,
-    color : '#1E34D6', 
-    textAlign:'center',
-    marginRight:10, 
-    fontSize: 18,
-    backgroundColor: 'white',
+  TopView: {
+    flex: 1.3,
+    width: "100%",
+    flexDirection: "colum",
+    alignItems: "center",
+    backgroundColor: "#0E0039",
   },
-  view_text_rc:{
+  micBtn: {
+    flex: 1,
+    shadowColor: "rgba(218, 114, 255, 0.41)",
+    shadowOpacity: 1,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    width: 160,
+    height: 160,
+    left: 120,
+    top: 129,
+    position: "absolute",
+    alignItems: "center",
+    borderRadius: 100,
+    backgroundColor: "#0E0039",
+  },
+  accuracy: {
+    width: 234,
+    height: 50,
+    shadowColor: "rgba(218, 114, 255, 0.41)",
+    marginBottom: 5,
+    shadowOpacity: 1,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    backgroundColor: "white",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 40,
+    backgroundColor: "#100042",
+  },
+  recordingTime: {
+    color: "white",
+    position: "absolute",
+    top: 30,
+    fontSize: 40,
+    fontWeight: 200,
+  },
+  linear: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#0E0039",
+  },
+  view_text_rc: {
     width: 150,
     height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 20,
   },
-  view_Flist:{
-    height: 60,
-    flexDirection: "column", 
-    alignItems: 'center' , 
-    marginTop: 20,
-    borderRadius: 10,
-    borderColor: "white",
+  view_Flist: {
+    height: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    marginVertical: 8,
+    borderRadius: 8,
+    borderColor: "#7EBBFF",
     borderWidth: 1,
     color: "white",
   },
-  text_rc:{
-    fontSize: 19,
-    fontWeight: 600
-  },
-  recordingTime: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  list_name: {
     marginLeft: 10,
+    fontSize: 16,
+    fontWeight: 400,
+    color: "#EFE3FF",
   },
-  textStart: {
-    width: 100,
-    height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'purple',
-    borderRadius: 20,
+  list_count: {
+    color: "#7EBBFF",
+    marginLeft: 13,
   },
-  FList:{
+  list_time: {
+    color: "#7EBBFF",
+    marginLeft: 30,
+  },
+  FList: {
     flex: 1,
     marginTop: 10,
-    width : '90%',
+    width: "95%",
   },
-  checkBT:{
-    width:50,
-    height:30,
-    marginLeft:10,
-    backgroundColor : 'gray',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 20,
-  }
 });
