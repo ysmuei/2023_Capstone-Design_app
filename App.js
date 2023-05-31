@@ -51,7 +51,7 @@ export default function App() {
         },
       };
       const response = await axios.post(
-        'http://172.30.60.3:5000/api/upload',
+        'http://172.30.12.3:5000/api/upload',
         formData,
         config
       );
@@ -80,7 +80,7 @@ export default function App() {
         type: "audio/x-caf", //x-caf// .caf파일 형식에 맞게 설정
         name: fileName,
       };
-      
+      console.log('Start Recording uploading...');
       //await uploadRecording(file, responseData); // responseData를 인수로 전달합니다.
       const response = await uploadRecording(file, response);
       const accuracyString = response.data.substring(2,6); // "[0.29971]"에서 첫 번째 요소 추출
@@ -238,59 +238,75 @@ export default function App() {
 
   return (
     //<SafeAreaView style={{ flex: 1, backgroundColor: '#0E0039, #0E0019' }}>
-      <View style={styles.view1}>
+    <View style={styles.view1}>
+      <View style={styles.TopView}>
         {isLoading && (
-            <View style={{position: 'absolute',
-            top: 100,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'white',}}>
-              <ActivityIndicator size="large" color="#FFFFFF"/>
-            </View>  
-          )}
-        <View style={styles.TopView}>
-          {isRecording && <Text style={styles.recordingTime}>
+          <View
+            style={{
+              position: "absolute",
+              width: 0,
+              height: 0,
+              top: 50,
+              left: 200,
+              right: 0,
+              bottom: 0,
+              justifyContent: "center",
+              alignItems: "center",
+              flex: 1,
+              backgroundColor: 'white'
+            }}
+          >
+            <Text style={{color: 'white'}}>분석중 </Text>
+            <ActivityIndicator size="large" color="#FFFFFF" />
+          </View>
+        )}
+        {isRecording && (
+          <Text style={styles.recordingTime}>
             {new Date(recordingTime).toISOString().substr(14, 8)}
             {/* {recordingTime / 1000} */}
-            </Text>}
-            
-          <View style={{ flex: 1 }}>
-            <Image
-              source={require("./assets/images/image1.png")}
-              style={{ marginTop: -30 }}
-            />
-            <TouchableOpacity style={styles.micBtn} onPress={isRecording ? stopRecording : startRecording}>
-              <Icon
-                style={{ marginTop: 40, marginLeft: 7 }}
-                name={isRecording ? "stop" : "mic"}
-                size={70}
-                color="white"
-              />
-            </TouchableOpacity>
-          </View>
-          <View>
-            <Text style={{ color: "white", marginBottom: 20 }}>
-              {isRecording ? 'Recording Stop ': 'Recording Start'}
-            </Text>
-          </View>
-          <View style={styles.accuracy}>
-            <Text style={{ color: "#DF84DD", fontSize: 30, fontWeight: 200, }}>
-              Accuracy {accuracy} %
-            </Text>
-          </View>
-        </View>
-        <LinearGradient colors={['rgba(14, 0, 57, 0)', '#0E0039', '#0E0019']} style={styles.linear}>
-          <FlatList
-            style={styles.FList}
-            data={recordingsList}
-            renderItem={renderRecordingItem}
-            keyExtractor={(item) => item}
+          </Text>
+        )}
+
+        <View style={{ flex: 1 }}>
+          <Image
+            source={require("./assets/images/image1.png")}
+            style={{ marginTop: -30 }}
           />
-        </LinearGradient>
+          <TouchableOpacity
+            style={styles.micBtn}
+            onPress={isRecording ? stopRecording : startRecording}
+          >
+            <Icon
+              style={{ marginTop: 40, marginLeft: 7 }}
+              name={isRecording ? "stop" : "mic"}
+              size={70}
+              color="white"
+            />
+          </TouchableOpacity>
+        </View>
+        <View>
+          <Text style={{ color: "white", marginBottom: 20 }}>
+            {isRecording ? "Recording Stop " : "Recording Start"}
+          </Text>
+        </View>
+        <View style={styles.accuracy}>
+          <Text style={{ color: "#DF84DD", fontSize: 30, fontWeight: 200 }}>
+            Accuracy {accuracy} %
+          </Text>
+        </View>
       </View>
+      <LinearGradient
+        colors={["rgba(14, 0, 57, 0)", "#0E0039", "#0E0019"]}
+        style={styles.linear}
+      >
+        <FlatList
+          style={styles.FList}
+          data={recordingsList}
+          renderItem={renderRecordingItem}
+          keyExtractor={(item) => item}
+        />
+      </LinearGradient>
+    </View>
     //</SafeAreaView>
   );
 }
