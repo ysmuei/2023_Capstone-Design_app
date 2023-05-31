@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, TouchableOpacity, FlatList, SafeAreaView  } from 'react-native';
+import { Text, View, TouchableOpacity, FlatList, SafeAreaView, ActivityIndicator  } from 'react-native';
 import { StyleSheet } from "react-native";
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
@@ -10,64 +10,14 @@ import {Image} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient'
 
 
-const uploadRecording = async (file) => {
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const config = {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    };
-    const response = await axios.post(
-      'http://172.30.40.21:5000/api/upload',
-      formData,
-      config
-    );
-  
-
-    console.log('Recording uploaded successfully');
-    console.log(response.data); // 서버 응답 내용 출력
-
-     // 서버 응답 내용을 상태 변수에 저장
-     return response;
-     //responseData = response.data;
-     //setResponseData(response.data);
-  } catch (error) {
-    console.error('Failed to upload recording:', error);
-  }
-};
-
-// 검사 버튼 클릭 시 서버로 음성 파일 전송
-const handleCheckButton = async (fileName) => {
-  try {
-    const directory = `${FileSystem.documentDirectory}recordings/`;
-    const fileUri = `${directory}${fileName}`;
-    const file = {
-      uri: fileUri,
-      type: 'audio/x-caf', //x-caf// .caf파일 형식에 맞게 설정
-      name: fileName,
-    };
-
-    //await uploadRecording(file, responseData); // responseData를 인수로 전달합니다.
-    const response = await uploadRecording(file);
-    //await uploadRecording(file);
-    // 상태 변수에 저장된 응답 내용을 화면에 출력
-    console.log(responseData);
-    setResponseData(response.data);
-  } catch (error) {
-    console.error('Failed to handle check button:', error);
-  }
-};
-
 export default function App() {
   const [recording, setRecording] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingsList, setRecordingsList] = useState([]);
   const [recordingTime, setRecordingTime] = useState(0);
   const [responseData, setResponseData] = useState(null);
-  
+  const [accuracy, setAccuracy] = useState(null);
+  const [isLoading, setIsLoading] = useState(false)
   useEffect(() => {
     Audio.setAudioModeAsync({
       allowsRecordingIOS: true,
@@ -90,7 +40,64 @@ export default function App() {
       clearInterval(timer);
     };
   }, [isRecording]);
+  const uploadRecording = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+  
+      const config = {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      };
+      const response = await axios.post(
+        'http://172.30.60.3:5000/api/upload',
+        formData,
+        config
+      );
+    
+  
+      console.log('Recording uploaded successfully');
+      console.log(response.data); // 서버 응답 내용 출력
+        
+       // 서버 응답 내용을 상태 변수에 저장
+       return response;
+       //responseData = response.data;
+       
+    } catch (error) {
+      console.error('Failed to upload recording:', error);
+    }
+  };
+  
+  // 검사 버튼 클릭 시 서버로 음성 파일 전송
+  const handleCheckButton = async (fileName) => {
+    setIsLoading(true);//로딩 상태 시작
+    try {
+      const directory = `${FileSystem.documentDirectory}recordings/`;
+      const fileUri = `${directory}${fileName}`;
+      const file = {
+        uri: fileUri,
+        type: "audio/x-caf", //x-caf// .caf파일 형식에 맞게 설정
+        name: fileName,
+      };
+      
+      //await uploadRecording(file, responseData); // responseData를 인수로 전달합니다.
+      const response = await uploadRecording(file, response);
+      const accuracyString = response.data.substring(2,6); // "[0.29971]"에서 첫 번째 요소 추출
+      const accuracy = parseFloat(accuracyString) * 100; // 반환된 값을 실수로 변환하고 100을 곱하여 퍼센트로 표시
+      
+      const accu = response.data
+      const accuFl = parseFloat(accu)
+      //setAccuracy(accu)
+      setAccuracy(accuracy.toFixed(1));
+      setResponseData(response.data);
+      setIsLoading(false);//로딩 상태 종료
+    } catch (error) {
+      console.error('Failed to handle check button:', error);
+      setIsLoading(false);//로딩 상태 종료
 
+    }
+  };
   const loadRecordings = async () => {
     try {
       const directory = `${FileSystem.documentDirectory}recordings/`;
@@ -194,15 +201,35 @@ export default function App() {
     const count = index + 1;
     return (
       <View style={styles.view_Flist}>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: 'space-between', flex: 1 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flex: 1,
+          }}
+        >
           <Text style={styles.list_count}>{count}</Text>
           <Text style={styles.list_name}>{shortenedName}</Text>
-          <Text style={styles.list_time}>00:03</Text>
-          <TouchableOpacity onPress={() => playRecording(item)}>
-            <Icon style={{marginLeft: 20}} name="play" size={25} color="white" />
+          {/* <Text style={styles.list_time}>00:03</Text> */}
+          <TouchableOpacity
+            onPress={() => {
+              //setIsLoading(true);
+              playRecording(item); 
+              handleCheckButton(item, responseData);
+              //setIsLoading(false)
+            }}
+          >
+            <Icon
+              style={{ marginLeft: 20 }}
+              name="play"
+              size={25}
+              color="white"
+            />
           </TouchableOpacity>
+          
           <TouchableOpacity onPress={() => deleteRecording(item)}>
-            <Icon name="trash" size={25} color="white"/>
+            <Icon name="trash" size={25} color="white" />
           </TouchableOpacity>
         </View>
       </View>
@@ -210,13 +237,26 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    //<SafeAreaView style={{ flex: 1, backgroundColor: '#0E0039, #0E0019' }}>
       <View style={styles.view1}>
+        {isLoading && (
+            <View style={{position: 'absolute',
+            top: 100,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'white',}}>
+              <ActivityIndicator size="large" color="#FFFFFF"/>
+            </View>  
+          )}
         <View style={styles.TopView}>
           {isRecording && <Text style={styles.recordingTime}>
             {new Date(recordingTime).toISOString().substr(14, 8)}
             {/* {recordingTime / 1000} */}
             </Text>}
+            
           <View style={{ flex: 1 }}>
             <Image
               source={require("./assets/images/image1.png")}
@@ -238,7 +278,7 @@ export default function App() {
           </View>
           <View style={styles.accuracy}>
             <Text style={{ color: "#DF84DD", fontSize: 30, fontWeight: 200, }}>
-              Accuracy  ??%
+              Accuracy {accuracy} %
             </Text>
           </View>
         </View>
@@ -251,16 +291,18 @@ export default function App() {
           />
         </LinearGradient>
       </View>
-    </SafeAreaView>
+    //</SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
   view1: {
+    backgroundColor: '#0E0039',
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
   TopView: {
+    marginTop: 50,
     flex: 1.3,
     width: "100%",
     flexDirection: "colum",
